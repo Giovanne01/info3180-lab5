@@ -13,7 +13,6 @@ from app.models import UserProfile
 from werkzeug.security import check_password_hash
 
 
-
 ###
 # Routing for your application.
 ###
@@ -32,23 +31,38 @@ def about():
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
-    if current_user.is_authenticated:
-        return redirect(url_for('secure_page'))
-
     form = LoginForm()
     if request.method == "POST":
+        # change this to actually validate the entire form submission
+        # and not just one field
         if form.validate_on_submit():
-            username= form.username.data
-            password=form.password.data
-
-            user= UserProfile.query.filter_by(username=username).first()
+            username = form.username.data
+            password = form.password.data
+            user = UserProfile.query.filter_by(username=username).first()
             if user is not None and check_password_hash(user.password, password):
                 login_user(user)
                 load_user(user.get_id())
-                login_user(user)
                 flash('Logged in successfully.', 'success')
-                return redirect(url_for("secure_page"))  # they should be redirected to a secure-page route instead
+                return redirect(url_for("secure_page"))
+            else:
+                flash('Username or Password is incorrect.', 'danger')
     return render_template("login.html", form=form)
+
+
+@app.route('/secure-page')
+@login_required
+def secure_page():
+    return render_template("secure_page.html")
+
+
+
+@app.route("/logout")
+@login_required
+def logout():
+    # Logout the user and end the session
+    logout_user()
+    flash('You have been logged out.', 'danger')
+    return redirect(url_for('home'))
 
 
 # user_loader callback. This callback is used to reload the user object from
